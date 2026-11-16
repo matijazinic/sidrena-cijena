@@ -224,7 +224,7 @@ class SCJ_Frontend {
 
 	public static function sc_arhiva() {
 		$d    = SCJ_Exporter::dir();
-		$out  = '<div class="scj-arhiva"><p>Cjenik u strojno čitljivom obliku (NN 101/2026):</p><ul>';
+		$out  = '<div class="scj-arhiva"><p>Cjenik u strojno čitljivom obliku (CSV/XML):</p><ul>';
 		$seen = 0;
 		foreach ( array( 'proizvodi', 'usluge' ) as $tip ) {
 			foreach ( (array) SCJ_Settings::get( 'formati' ) as $fmt ) {

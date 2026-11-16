@@ -76,14 +76,14 @@ ok( $np && $nu && array( 1, 2 ) === array( min( (int) $mp[1], (int) $mu[1] ), ma
 $csv = file_get_contents( $GLOBALS['T_UP'] . '/cjenici/' . SCJ_Exporter::latest( 'usluge', 'csv' )['name'] );
 echo $csv;
 $lines = array_map( function ( $l ) { return str_getcsv( $l, ';', '"', '' ); }, array_filter( explode( "\n", $csv ) ) );
-ok( $lines[0] === array( 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'sidrena_cijena' ), 'zaglavlje usluga' );
+ok( $lines[0] === array( 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'bazna_cijena' ), 'zaglavlje usluga' );
 ok( count( $lines ) === 4, '3 usluge (isključena i skica nisu u cjeniku)' );
 ok( $lines[2] === array( 'Bojanje "kratka kosa"; s pranjem', '32,00', 'da', 'Jesenska akcija', '40,00' ), 'akcija, navodnici i ; ispravno' );
 ok( $lines[3][4] === '', 'nedostajuća sidrena ostaje prazna' );
 $pcsv = file_get_contents( $GLOBALS['T_UP'] . '/cjenici/' . SCJ_Exporter::latest( 'proizvodi', 'csv' )['name'] );
 echo $pcsv;
 $pl = str_getcsv( explode( "\n", $pcsv )[1], ';', '"', '' );
-ok( $pl === array( 'Šampon 500 ml', 'SAM-500', 'Kozmo', 'l', '16,00', '8,00', 'ne', '', '7,50', '3850000000001', 'nedostupno' ), 'redak proizvoda: cijena/l = 16,00, nedostupno' );
+ok( $pl === array( 'Šampon 500 ml', 'SAM-500', 'Kozmo', '0,50', 'l', '16,00', '8,00', 'ne', '', '7,50', '3850000000001' ), 'redak proizvoda: neto 0,50 l, cijena/l = 16,00, bez dostupnosti' );
 
 $xmlf = $GLOBALS['T_UP'] . '/cjenici/' . SCJ_Exporter::latest( 'usluge', 'xml' )['name'];
 libxml_use_internal_errors( true );

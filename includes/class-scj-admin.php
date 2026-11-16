@@ -269,8 +269,8 @@ class SCJ_Admin {
 			return;
 		}
 		$last = get_option( 'scj_last_success' );
-		if ( ! $ours && ( $last || SCJ_Scheduler::now()->format( 'Y-m-d' ) >= '2026-10-01' ) && ! SCJ_Scheduler::published_today() && SCJ_Scheduler::now()->format( 'H:i' ) >= '08:00' ) {
-			echo '<div class="notice notice-error"><p><strong>Sidrena cijena:</strong> današnji cjenik nije objavljen, a rok je bio 8:00. <a href="' . esc_url( admin_url( 'admin.php?page=scj-status' ) ) . '">Status i objava</a></p></div>';
+		if ( ! $ours && ( $last || SCJ_Scheduler::now()->format( 'Y-m-d' ) >= '2026-11-17' ) && ! SCJ_Scheduler::published_today() && SCJ_Scheduler::now()->format( 'H:i' ) >= '08:00' ) {
+			echo '<div class="notice notice-error"><p><strong>Sidrena cijena:</strong> današnji cjenik do 8:00 nije objavljen. <a href="' . esc_url( admin_url( 'admin.php?page=scj-status' ) ) . '">Status i objava</a></p></div>';
 		}
 	}
 
@@ -356,7 +356,7 @@ class SCJ_Admin {
 		echo '</ol>';
 		echo '<p>Adresa vraća grešku ako cjenik nakon zadanog vremena nije objavljen, pa vam usluga (cron-job.org ili UptimeRobot) može poslati obavijest i kad slanje e-pošte sa stranice ne radi. Uključite obavijesti o greškama u postavkama te usluge.</p>';
 		echo '<details style="max-width:1000px"><summary>Za administratore: sistemski cron na hostingu</summary><p>Primjer za cPanel (svaki sat u 5. minuti):</p><code class="scj-code">5 * * * * wget -q -O - "' . esc_html( $trigger ) . '" &gt;/dev/null 2&gt;&amp;1</code></details>';
-		echo '<p>Ako koristite Cloudflare ili sigurnosni dodatak (Wordfence i sl.), izuzmite putanje <code>' . esc_html( wp_parse_url( $dir['url'], PHP_URL_PATH ) ) . '/*</code> i <code>/wp-json/sidrena-cijena/*</code> od provjera za botove. Odluka traži da programi mogu preuzimati cijene.</p>';
+		echo '<p>Ako koristite Cloudflare ili sigurnosni dodatak (Wordfence i sl.), izuzmite putanje <code>' . esc_html( wp_parse_url( $dir['url'], PHP_URL_PATH ) ) . '/*</code> i <code>/wp-json/sidrena-cijena/*</code> od provjera za botove. Propis traži da programi mogu preuzimati cjenik.</p>';
 
 		$files = array_slice( SCJ_Exporter::files(), 0, 12 );
 		echo '<h2>Zadnje objavljene datoteke</h2>';
@@ -390,7 +390,7 @@ class SCJ_Admin {
 	 * Kratko odricanje od odgovornosti na dnu stranica plugina.
 	 */
 	private static function disclaimer() {
-		echo '<p class="description" style="max-width:1000px;margin-top:24px;border-top:1px solid #dcdcde;padding-top:12px">Dodatak je izrađen prema Odlukama iz NN 101/2026 i dostupnim pojašnjenjima Ministarstva gospodarstva, ali nije pravni savjet i ne jamči usklađenost s propisima. Propisi i njihova tumačenja se mijenjaju, a moguće su i greške u dodatku. Koristite ga na vlastitu odgovornost i redovito provjeravajte prikazane i objavljene cijene. Za točnost cijena i usklađenost poslovanja odgovara trgovac, odnosno pružatelj usluge.</p>';
+		echo '<p class="description" style="max-width:1000px;margin-top:24px;border-top:1px solid #dcdcde;padding-top:12px">Dodatak je izrađen prema pravilnicima o isticanju bazne cijene i o načinu objave cjenika (na snazi od 17. 11. 2026.) i dostupnim pojašnjenjima Ministarstva gospodarstva, ali nije pravni savjet i ne jamči usklađenost s propisima. Propisi i njihova tumačenja se mijenjaju, a moguće su i greške u dodatku. Koristite ga na vlastitu odgovornost i redovito provjeravajte prikazane i objavljene cijene. Za točnost cijena i usklađenost poslovanja odgovara trgovac, odnosno pružatelj usluge.</p>';
 		echo '<p class="description" style="max-width:1000px">Trebate pomoć s postavljanjem ili održavanjem? <a href="https://zin-digital.com/" target="_blank" rel="noopener">Matija Žinić, zin-digital.com</a></p>';
 	}
 
@@ -417,7 +417,7 @@ class SCJ_Admin {
 		echo '<form method="post" action="options.php">';
 		settings_fields( 'scj_settings_group' );
 
-		echo '<h2>Prodajni objekt</h2><p>Ovi podaci ulaze u naziv datoteke cjenika (točka VI. Odluke) kako su upisani, prema primjeru Ministarstva: <code>prodavaonica_Ilica 150 Zagreb_P-01_104_01.10.2026_07:45.csv</code>. Oznaka je ista kao na računima (oznaka poslovnog prostora).</p><table class="form-table">';
+		echo '<h2>Prodajni objekt</h2><p>Ovi podaci ulaze u naziv datoteke cjenika kako su upisani, prema primjeru Ministarstva: <code>prodavaonica_Ilica 150 Zagreb_P-01_104_01.10.2026_07:45.csv</code>. Oznaka je ista kao na računima (oznaka poslovnog prostora).</p><table class="form-table">';
 		self::field( 'naziv_trgovca', 'Naziv trgovca' );
 		self::field( 'oib', 'OIB', 'text', 'Neobavezno. Upisuje se u zaglavlje XML-a.' );
 		self::field( 'oblik_objekta', 'Oblik prodajnog objekta', 'text', 'Za web trgovinu Ministarstvo navodi "webshop". Za ostalo npr. prodavaonica, servis, salon, frizerski salon.' );
@@ -426,7 +426,7 @@ class SCJ_Admin {
 		echo '</table>';
 
 		echo '<h2>Sidrena cijena</h2><table class="form-table">';
-		self::field( 'sidreni_datum', 'Referentni datum', 'date', 'Prema NN 101/2026: 10. 9. 2026.' );
+		self::field( 'sidreni_datum', 'Referentni datum', 'date', 'Bazna (sidrena) cijena je cijena na dan 10. 9. 2026.' );
 		self::field( 'stari_datum', 'Raniji referentni datum', 'date', 'Samo za trgovce koji su već imali obvezu po staroj odluci (NN 75/2025): za hranu, piće, kozmetiku, sredstva za čišćenje, toaletne potrepštine i proizvode za kućanstvo zadržavaju 2. 5. 2025. Tko tada nije bio obveznik, za sve proizvode koristi 10. 9. 2026. i ne označava kategorije niže.' );
 		if ( SCJ_Plugin::woo_active() ) {
 			$cats = get_terms(
@@ -442,7 +442,7 @@ class SCJ_Admin {
 					echo '<label style="display:block"><input type="checkbox" name="' . esc_attr( $o ) . '[stare_kategorije][]" value="' . (int) $cat->term_id . '" ' . checked( in_array( (int) $cat->term_id, $sel, true ), true, false ) . '> ' . esc_html( $cat->name ) . '</label>';
 				}
 			}
-			echo '</div><p class="description">Označite samo ako ste bili obveznik stare odluke (NN 75/2025). Proizvodi u odabranim kategorijama (i podkategorijama) koriste raniji datum, osim ako proizvod ima vlastiti datum. Za te proizvode ne ističe se i datum 10. 9. 2026.</p></td></tr>';
+			echo '</div><p class="description">Označite samo ako ste bili obveznik stare odluke (NN 75/2025). Proizvodi u odabranim kategorijama (i podkategorijama) koriste raniji datum, osim ako proizvod ima vlastiti datum. Za te proizvode ne ističe se i datum 10. 9. 2026. Ako je proizvod 2. 5. 2025. bio na akciji, kao sidrenu upišite najnižu cijenu u 30 dana prije početka te akcije.</p></td></tr>';
 		}
 		self::field( 'auto_nova_sidrena', 'Novi proizvodi', 'checkbox', 'Proizvodima i uslugama objavljenima nakon referentnog datuma automatski upiši sidrenu cijenu = cijena prvog dana ponude, s tim datumom. Isti proizvod s novom šifrom ili nazivom nije novi proizvod: ako ga unesete ponovo, upišite mu staru sidrenu cijenu i datum.' );
 		echo '</table>';
@@ -481,7 +481,7 @@ class SCJ_Admin {
 		echo '<h2>Objava cjenika</h2><table class="form-table">';
 		$f = (array) SCJ_Settings::get( 'formati' );
 		echo '<tr><th scope="row">Formati</th><td><label><input type="checkbox" name="' . esc_attr( $o ) . '[formati][]" value="csv" ' . checked( in_array( 'csv', $f, true ), true, false ) . '> CSV</label> &nbsp; <label><input type="checkbox" name="' . esc_attr( $o ) . '[formati][]" value="xml" ' . checked( in_array( 'xml', $f, true ), true, false ) . '> XML</label><p class="description">Odluka traži jedan od dva formata.</p></td></tr>';
-		self::field( 'vrijeme_objave', 'Vrijeme dnevne objave', 'time', 'Rok je 8:00. Preporuka je 01:00: WordPress zadatke pokreće tek kad netko posjeti stranicu, pa ranije vrijeme daje više prilika da se cjenik objavi prije roka (ako objava ne uspije, pokušava se svaki sat). Promjene cijena tijekom dana ne traže novu objavu.' );
+		self::field( 'vrijeme_objave', 'Vrijeme dnevne objave', 'time', 'Promjena cijene mora biti u cjeniku najkasnije idući radni dan do 11:00. Preporuka je 01:00: WordPress zadatke pokreće tek kad netko posjeti stranicu, pa ranije vrijeme daje više prilika da se cjenik objavi na vrijeme (ako objava ne uspije, pokušava se svaki sat). Dodatak cjenik objavljuje svaki dan, i kad promjene nije bilo.' );
 		echo '<tr><th scope="row">Decimalni separator (CSV)</th><td><select name="' . esc_attr( $o ) . '[decimalni_separator]"><option value="," ' . selected( SCJ_Settings::get( 'decimalni_separator' ), ',', false ) . '>zarez (12,50)</option><option value="." ' . selected( SCJ_Settings::get( 'decimalni_separator' ), '.', false ) . '>točka (12.50)</option></select><p class="description">Razdjelnik stupaca je točka-zarez. XML uvijek koristi točku.</p></td></tr>';
 		self::field( 'csv_bom', 'UTF-8 BOM', 'checkbox', 'Dodaj BOM (Excel tada ispravno prikazuje hrvatska slova, ali neki programi ga ne vole).' );
 		self::field( 'zadrzi_dana', 'Čuvaj datoteke (dana)', 'number', 'Najmanje 31. Prethodni cjenici moraju biti javno dostupni najmanje 30 dana od objave.', 'min="31" max="400"' );
@@ -504,7 +504,7 @@ class SCJ_Admin {
 
 		echo '<div class="card"><h2>1. Popuni nedostajuće sidrene cijene</h2>';
 		echo '<p>Bez sidrene cijene: <strong>' . (int) $dry['woo'] . '</strong> WooCommerce proizvoda/varijacija i <strong>' . (int) $dry['stavke'] . '</strong> stavki cjenika.</p>';
-		echo '<p>Upisuje <em>trenutnu redovnu cijenu</em> kao sidrenu. Točno je samo za proizvode kojima se cijena nije mijenjala od ' . esc_html( SCJ_Format::date_hr( (string) SCJ_Settings::get( 'sidreni_datum' ) ) ) . '. Za proizvode kojima se cijena mijenjala koristite uvoz (korak 2) ili ih ispravite ručno.</p>';
+		echo '<p>Upisuje <em>trenutnu redovnu cijenu</em> kao sidrenu. Točno je samo za proizvode kojima se cijena nije mijenjala od ' . esc_html( SCJ_Format::date_hr( (string) SCJ_Settings::get( 'sidreni_datum' ) ) ) . '. Za proizvode kojima se cijena mijenjala koristite uvoz (korak 2) ili ih ispravite ručno. Proizvodi i stavke dodani nakon tog datuma dobivaju datum kad su dodani (sidrena = cijena pri prvom uvrštenju).</p>';
 		echo '<form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '" onsubmit="return confirm(\'Upisati trenutnu redovnu cijenu kao sidrenu za sve stavke koje je nemaju?\')">';
 		wp_nonce_field( 'scj_fill' );
 		echo '<input type="hidden" name="action" value="scj_fill"><button class="button button-primary" ' . disabled( 0, $dry['woo'] + $dry['stavke'], false ) . '>Popuni</button></form></div>';

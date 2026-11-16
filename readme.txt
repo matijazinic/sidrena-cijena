@@ -3,20 +3,20 @@ Tags: sidrena cijena, cjenik, woocommerce, hrvatska
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 
-Sidrena cijena, najniža cijena u 30 dana i dnevna objava cjenika u CSV/XML formatu prema NN 101/2026.
+Bazna (sidrena) cijena, najniža cijena u 30 dana i dnevna objava cjenika u CSV/XML formatu.
 
 == Opis ==
 
-Plugin pokriva obje odluke Vlade iz NN 101/2026: isticanje sidrene cijene i objavu cjenika na webu. Radi s WooCommerceom, a usluge i proizvode koji se ne prodaju kroz webshop možete unijeti kao stavke cjenika.
+Plugin pokriva oba pravilnika koja vrijede od 17. 11. 2026.: isticanje bazne cijene (u praksi "sidrena cijena") i objavu cjenika na webu. Oni su zamijenili odluke Vlade iz NN 101/2026. Radi s WooCommerceom, a usluge i proizvode koji se ne prodaju kroz webshop možete unijeti kao stavke cjenika.
 
 Što radi:
 
 * Uz cijenu prikazuje sidrenu cijenu (cijenu na dan 10. 9. 2026.). Trgovci koji su već bili obveznici stare odluke (NN 75/2025) za hranu, piće, kozmetiku i ostale kategorije iz te odluke zadržavaju 2. 5. 2025.
 * Kod sniženja prikazuje najnižu cijenu u zadnjih 30 dana prije sniženja.
-* Svaki dan objavljuje cjenik proizvoda i cjenik usluga u CSV i/ili XML formatu (zadano u 01:00, rok je 8:00). Naziv datoteke je prema primjeru Ministarstva, npr. prodavaonica_Ilica 150 Zagreb_P-01_104_01.10.2026_07:45.csv Objekt koji ima i proizvode i usluge objavljuje dvije datoteke s istom oznakom, a svaka ima svoj broj pohrane.
+* Svaki dan objavljuje cjenik proizvoda i cjenik usluga u CSV i/ili XML formatu (zadano u 01:00; promjena cijene mora biti u cjeniku najkasnije idući radni dan do 11:00). Naziv datoteke je prema primjeru Ministarstva, npr. prodavaonica_Ilica 150 Zagreb_P-01_104_01.10.2026_07:45.csv Objekt koji ima i proizvode i usluge objavljuje dvije datoteke s istom oznakom, a svaka ima svoj broj pohrane.
 * Cjenik usluga objavljuje i nakon svake promjene cijene. Akcija na usluzi može imati datum početka i kraja, pa sama počne i završi.
 * Stare objave čuva najmanje 31 dan i uz njih objavljuje javni popis (index.html i index.json).
 * Ako jutarnja objava ne uspije, pokušava ponovno svaki sat. Ako cjenik ni u 7:45 nije objavljen, šalje e-mail upozorenje.
@@ -38,10 +38,10 @@ Plugin pokriva obje odluke Vlade iz NN 101/2026: isticanje sidrene cijene i obja
 
 == Dobro je znati ==
 
-* Službeni format datoteke (redoslijed stupaca, razdjelnik) ne postoji. Stupci su nazvani prema tekstu odluke. Ako Ministarstvo objavi format, prilagodit ćemo ga u novoj verziji.
+* Službeni format datoteke (redoslijed stupaca, razdjelnik) ne postoji. Stupci su nazvani prema tekstu pravilnika. Ako Ministarstvo objavi format, prilagodit ćemo ga u novoj verziji.
 * Plugin ne zna koja vam je bila cijena 10. 9. 2026. ako tada nije bio instaliran. Tu cijenu trebate upisati ili uvesti.
 * PDV: sidrena cijena upisuje se isto kao redovna (s PDV-om ili bez, prema postavkama WooCommercea) i prikazuje se isto kao cijena proizvoda, uz poreznu klasu proizvoda (25 %, 13 %, 5 %, bez poreza). U CSV/XML cjeniku sve je uvijek s PDV-om. Stavke cjenika upisuju se s PDV-om. Ako trgovina kupcima prikazuje cijene bez PDV-a, stranica Status to javlja upozorenjem.
-* Proizvod "na narudžbu" objavljuje se kao nedostupan, jer Ministarstvo traži da dostupno znači stvarno na zalihi.
+* Cjenik proizvoda sadrži neto količinu (polje "Neto količina" na proizvodu). Dostupnost se više ne objavljuje.
 * Podržan je jedan prodajni objekt po instalaciji.
 * Ako se u trgovini napravljenoj u graditelju stranica sidrena cijena ne prikaže uz proizvod, [sidrena_cijena prikaz="sidrena"] ispiše je za trenutni proizvod, a [sidrena_cijena id="123"] ili sifra="SKU" za bilo koji Woo proizvod.
 * Kratki kod [sidrena_cijena] prima id ili sifra stavke (ili Woo proizvoda) i prikaz="sve", "cijena", "sidrena" ili "najniza". S oznaka="..." mijenjate tekst ispred iznosa, a oznaka="" ostavlja samo iznos.
@@ -49,7 +49,7 @@ Plugin pokriva obje odluke Vlade iz NN 101/2026: isticanje sidrene cijene i obja
 
 == Odricanje od odgovornosti ==
 
-Plugin je izrađen s pažnjom, prema Odlukama iz NN 101/2026 i pojašnjenjima Ministarstva gospodarstva dostupnima u trenutku izrade. Trudim se da radi u skladu s propisima, ali ne mogu to jamčiti: propisi i njihova tumačenja se mijenjaju, službena tehnička specifikacija cjenika ne postoji, a u pluginu su moguće i greške.
+Plugin je izrađen s pažnjom, prema pravilnicima o isticanju bazne cijene i o načinu objave cjenika te pojašnjenjima Ministarstva gospodarstva dostupnima u trenutku izrade. Trudim se da radi u skladu s propisima, ali ne mogu to jamčiti: propisi i njihova tumačenja se mijenjaju, službena tehnička specifikacija cjenika ne postoji, a u pluginu su moguće i greške.
 
 * Plugin nije pravni savjet. U nejasnim slučajevima obratite se Ministarstvu gospodarstva, HOK-u, računovođi ili pravniku.
 * Plugin koristite na vlastitu odgovornost. Za točnost cijena, sidrenih cijena i objavljenih cjenika te za usklađenost poslovanja s propisima odgovara trgovac, odnosno pružatelj usluge.
@@ -58,6 +58,12 @@ Plugin je izrađen s pažnjom, prema Odlukama iz NN 101/2026 i pojašnjenjima Mi
 * Prikazane i objavljene cijene redovito provjeravajte, posebno nakon ažuriranja plugina, WordPressa ili WooCommercea.
 
 == Changelog ==
+
+= 1.1.0 =
+* Usklađeno s pravilnicima koji od 17. 11. 2026. zamjenjuju odluke iz NN 101/2026.
+* Cjenik proizvoda: novi stupac neto_kolicina, uklonjen stupac dostupnost. Stupac sidrena_cijena sada se zove bazna_cijena (i u cjeniku usluga). Tko treba stari oblik, može ga vratiti filterom scj_columns.
+* Tekstovi i upute više se ne pozivaju na ukinute odluke.
+* Alat "Popuni nedostajuće": proizvodima i stavkama dodanima nakon 10. 9. 2026. upisuje i datum kad su dodani (do sada je uz njih pisalo "Cijena na dan 10. 9. 2026.").
 
 = 1.0.0 =
 * Prva javna verzija.

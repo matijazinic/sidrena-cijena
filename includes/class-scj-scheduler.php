@@ -126,7 +126,7 @@ class SCJ_Scheduler {
 		}
 
 		if ( $now->format( 'H:i' ) >= '07:45' && ! self::published_today() ) {
-			self::maybe_alert( 'Današnji cjenik još nije objavljen, a rok je 8:00.' );
+			self::maybe_alert( 'Današnji cjenik još nije objavljen (kontrola u 7:45).' );
 		}
 
 		if ( ! wp_next_scheduled( 'scj_daily' ) ) {

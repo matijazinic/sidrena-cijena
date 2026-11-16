@@ -89,6 +89,11 @@ class SCJ_Tools {
 			$n['woo']++;
 			if ( ! $dry ) {
 				$p->update_meta_data( '_scj_sidrena', wc_format_decimal( $p->get_regular_price() ) );
+				// Proizvod koji 10. 9. nije postojao: datum prvog uvrštenja (inače bi se istaknuo 10. 9.).
+				$first = '' === (string) $p->get_meta( '_scj_datum', true ) ? SCJ_Woo::first_offer_date( $p ) : '';
+				if ( '' !== $first ) {
+					$p->update_meta_data( '_scj_datum', $first );
+				}
 				$p->save_meta_data();
 			}
 		}
@@ -107,12 +112,29 @@ class SCJ_Tools {
 			$n['stavke']++;
 			if ( ! $dry ) {
 				update_post_meta( $id, '_scj_sidrena', $cijena );
+				$first = self::item_first_offer_date( $id );
+				if ( '' !== $first && '' === (string) get_post_meta( $id, '_scj_datum', true ) ) {
+					update_post_meta( $id, '_scj_datum', $first );
+				}
 			}
 		}
 		if ( ! $dry ) {
 			SCJ_Rest::flush();
 		}
 		return $n;
+	}
+
+	/**
+	 * Stavka nastala nakon referentnog datuma: lokalni datum nastanka (Y-m-d), inače ''.
+	 */
+	private static function item_first_offer_date( $id ) {
+		$gmt = get_post_field( 'post_date_gmt', $id );
+		$ts  = ( $gmt && '0000-00-00 00:00:00' !== $gmt ) ? strtotime( $gmt . ' UTC' ) : 0;
+		if ( ! $ts ) {
+			return '';
+		}
+		$ymd = wp_date( 'Y-m-d', $ts );
+		return $ymd > (string) SCJ_Settings::get( 'sidreni_datum' ) ? $ymd : '';
 	}
 
 	public static function handle_fill() {

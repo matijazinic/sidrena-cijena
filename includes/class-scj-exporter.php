@@ -18,8 +18,10 @@ class SCJ_Writer {
 
 	public static function columns( $tip ) {
 		$cols = 'usluge' === $tip
-			? array( 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'sidrena_cijena' )
-			: array( 'naziv', 'sifra', 'marka', 'jedinica_mjere', 'cijena_za_jedinicu_mjere', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'sidrena_cijena', 'barkod', 'dostupnost' );
+			? array( 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'bazna_cijena' )
+			: array( 'naziv', 'sifra', 'marka', 'neto_kolicina', 'jedinica_mjere', 'cijena_za_jedinicu_mjere', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'bazna_cijena', 'barkod' );
+		// Pravilnik o načinu objave cjenika (od 17. 11. 2026.): neto količina umjesto dostupnosti, "bazna cijena".
+		// Stari stupci 'sidrena_cijena', 'dostupnost' i 'datum_sidrene_cijene' i dalje se mogu vratiti ovim filterom.
 		return apply_filters( 'scj_columns', $cols, $tip );
 	}
 
@@ -63,6 +65,8 @@ class SCJ_Writer {
 			'maloprodajna_cijena'           => SCJ_Format::number( $r['trenutna'], $sep ),
 			'posebni_oblik_prodaje'         => $r['na_akciji'] ? 'da' : 'ne',
 			'naziv_posebnog_oblika_prodaje' => $r['na_akciji'] ? $r['akcija_naziv'] : '',
+			'neto_kolicina'                 => isset( $r['kolicina'] ) && $r['kolicina'] > 0 ? SCJ_Format::number( $r['kolicina'], $sep ) : '',
+			'bazna_cijena'                  => SCJ_Format::number( $r['sidrena'], $sep ),
 			'sidrena_cijena'                => SCJ_Format::number( $r['sidrena'], $sep ),
 			'datum_sidrene_cijene'          => isset( $r['datum'] ) ? $r['datum'] : '',
 			'barkod'                        => isset( $r['barkod'] ) ? $r['barkod'] : '',
@@ -389,7 +393,9 @@ class SCJ_Exporter {
 				$cache[ $key ] = false !== strpos( $head, 'vrsta="usluge"' ) ? 'usluge' : 'proizvodi';
 			} else {
 				$line          = trim( strtok( preg_replace( '/^\xEF\xBB\xBF/', '', $head ), "\n" ) );
-				$cache[ $key ] = implode( ';', SCJ_Writer::columns( 'usluge' ) ) === $line ? 'usluge' : 'proizvodi';
+				// Datoteke objavljene do 1.0.x imaju stupac "sidrena_cijena"; u arhivi ostaju još 30-ak dana.
+				$now           = implode( ';', SCJ_Writer::columns( 'usluge' ) );
+				$cache[ $key ] = in_array( $line, array( $now, str_replace( 'bazna_cijena', 'sidrena_cijena', $now ) ), true ) ? 'usluge' : 'proizvodi';
 			}
 		}
 		return $cache[ $key ];
@@ -458,7 +464,7 @@ class SCJ_Exporter {
 		$html .= '<title>Cjenici – ' . esc_html( SCJ_Settings::get( 'naziv_trgovca' ) ) . '</title>';
 		$html .= '<style>body{font-family:system-ui,sans-serif;max-width:860px;margin:2rem auto;padding:0 1rem;color:#1d2327}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:.4rem .6rem;border-bottom:1px solid #ddd;font-size:.95rem}</style></head><body>';
 		$html .= '<h1>Cjenici</h1><p>' . esc_html( SCJ_Settings::get( 'naziv_trgovca' ) ) . ' · ' . esc_html( SCJ_Settings::get( 'oblik_objekta' ) ) . ', ' . esc_html( SCJ_Settings::get( 'adresa' ) ) . '</p>';
-		$html .= '<p>Objava prema Odluci o objavi cjenika proizvoda i usluga (NN 101/2026). Strojno čitljiv popis: <a href="index.json">index.json</a></p>';
+		$html .= '<p>Objava cjenika prema Pravilniku o načinu objave cjenika (na snazi od 17. 11. 2026.). Strojno čitljiv popis: <a href="index.json">index.json</a></p>';
 		$html .= '<table><thead><tr><th>Datoteka</th><th>Vrsta</th><th>Objavljeno</th></tr></thead><tbody>';
 		foreach ( $files as $f ) {
 			$html .= '<tr><td><a href="' . esc_attr( rawurlencode( $f['name'] ) ) . '">' . esc_html( $f['name'] ) . '</a></td><td>' . esc_html( $f['tip'] ) . '</td><td>' . esc_html( wp_date( 'j. n. Y. H:i', $f['mtime'] ) ) . '</td></tr>';

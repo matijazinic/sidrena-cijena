@@ -72,7 +72,16 @@ class SCJ_Woo {
 	/**
 	 * Je li proizvod nastao nakon referentnog datuma (dakle nije postojao 10. 9.).
 	 */
-	private static function created_after_reference( $product ) {
+	public static function created_after_reference( $product ) {
+		$created = self::created( $product );
+		$ref_end = new DateTimeImmutable( SCJ_Settings::get( 'sidreni_datum' ) . ' 23:59:59', wp_timezone() );
+		return ! $created || $created->getTimestamp() > $ref_end->getTimestamp();
+	}
+
+	/**
+	 * Datum nastanka proizvoda (za varijaciju datum roditelja) ili null.
+	 */
+	private static function created( $product ) {
 		$check = $product;
 		if ( $product->is_type( 'variation' ) ) {
 			$parent = wc_get_product( $product->get_parent_id() );
@@ -80,9 +89,19 @@ class SCJ_Woo {
 				$check = $parent;
 			}
 		}
-		$created = $check->get_date_created();
-		$ref_end = new DateTimeImmutable( SCJ_Settings::get( 'sidreni_datum' ) . ' 23:59:59', wp_timezone() );
-		return ! $created || $created->getTimestamp() > $ref_end->getTimestamp();
+		return $check->get_date_created();
+	}
+
+	/**
+	 * Za proizvod nastao nakon referentnog datuma: lokalni datum (Y-m-d) prvog uvrštenja u ponudu, inače ''.
+	 * Pojašnjenje MINGO: novi proizvod ima sidrenu cijenu na dan prvog uvrštenja, pa se ističe taj datum, ne 10. 9.
+	 */
+	public static function first_offer_date( $product ) {
+		$created = self::created( $product );
+		if ( ! $created || ! self::created_after_reference( $product ) ) {
+			return '';
+		}
+		return wp_date( 'Y-m-d', $created->getTimestamp() );
 	}
 
 	/**
@@ -608,6 +627,7 @@ class SCJ_Woo {
 			'sifra'           => $product->get_sku() ? $product->get_sku() : 'WC-' . $product->get_id(),
 			'marka'           => self::brand( $product ),
 			'jedinica'        => $jedinica,
+			'kolicina'        => $kolicina,
 			'cijena_jedinica' => ( $kolicina && $kolicina > 0 ) ? $current / $kolicina : null,
 			'redovna'         => $regular,
 			'trenutna'        => $current,
@@ -616,7 +636,7 @@ class SCJ_Woo {
 			'sidrena'         => null === $anchor ? null : self::incl_tax( $product, $anchor ),
 			'datum'           => $date,
 			'barkod'          => self::barcode( $product ),
-			// Pojašnjenje Ministarstva: dostupno samo ako je stvarno na zalihi u trenu objave; "na narudžbu" je nedostupno.
+			// Od 17. 11. 2026. nije u zadanim stupcima cjenika (može se vratiti filterom scj_columns). Dostupno = stvarno na zalihi.
 			'dostupno'        => 'instock' === $product->get_stock_status(),
 		);
 	}
