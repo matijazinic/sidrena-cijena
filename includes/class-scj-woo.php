@@ -74,7 +74,9 @@ class SCJ_Woo {
 	 */
 	public static function created_after_reference( $product ) {
 		$created = self::created( $product );
-		$ref_end = new DateTimeImmutable( SCJ_Settings::get( 'sidreni_datum' ) . ' 23:59:59', wp_timezone() );
+		// Hrana, piće, kozmetika... (odabrane kategorije): referentni datum je 2. 5. 2025., ne 10. 9. 2026.
+		$ref     = self::in_old_categories( $product ) ? SCJ_Settings::get( 'stari_datum' ) : SCJ_Settings::get( 'sidreni_datum' );
+		$ref_end = new DateTimeImmutable( $ref . ' 23:59:59', wp_timezone() );
 		return ! $created || $created->getTimestamp() > $ref_end->getTimestamp();
 	}
 
@@ -358,7 +360,10 @@ class SCJ_Woo {
 		}
 		$regular = '' === (string) $product->get_regular_price() ? null : self::incl_tax( $product, $product->get_regular_price() );
 		$price   = '' === (string) $product->get_price() ? null : self::incl_tax( $product, $product->get_price() );
-		SCJ_History::record( 'wc:' . $product->get_id(), $regular, $price );
+		// Izmijenjeni cjenik mora biti objavljen do 11:00 na dan izmjene, pa promjena cijene zakazuje objavu.
+		if ( SCJ_History::record( 'wc:' . $product->get_id(), $regular, $price ) ) {
+			SCJ_Scheduler::queue_publish();
+		}
 	}
 
 	/**
@@ -611,6 +616,7 @@ class SCJ_Woo {
 		$jedinica = self::parent_meta( $product, '_scj_jedinica' );
 		$jedinica = '' === $jedinica ? (string) SCJ_Settings::get( 'jedinica_zadana' ) : $jedinica;
 		$kolicina = SCJ_Format::parse_price( self::parent_meta( $product, '_scj_kolicina' ) );
+		$neto     = $kolicina; // U cjenik ide samo upisana neto količina, ne pretpostavljeni 1 komad.
 		if ( null === $kolicina && in_array( strtolower( $jedinica ), array( 'kom', 'komad', 'pak', 'kpl' ), true ) ) {
 			$kolicina = 1.0;
 		}
@@ -627,7 +633,7 @@ class SCJ_Woo {
 			'sifra'           => $product->get_sku() ? $product->get_sku() : 'WC-' . $product->get_id(),
 			'marka'           => self::brand( $product ),
 			'jedinica'        => $jedinica,
-			'kolicina'        => $kolicina,
+			'kolicina'        => $neto,
 			'cijena_jedinica' => ( $kolicina && $kolicina > 0 ) ? $current / $kolicina : null,
 			'redovna'         => $regular,
 			'trenutna'        => $current,

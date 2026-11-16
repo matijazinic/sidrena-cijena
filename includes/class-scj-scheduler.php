@@ -77,6 +77,10 @@ class SCJ_Scheduler {
 	 * Zakazuje objavu za 2 minute (više promjena zaredom = jedna objava).
 	 */
 	public static function queue_publish() {
+		// Objava u tijeku (npr. sama pokreće zakazane akcije i sprema proizvode): ne zakazuj još jednu.
+		if ( get_transient( 'scj_lock' ) ) {
+			return;
+		}
 		if ( ! wp_next_scheduled( 'scj_publish_now' ) ) {
 			wp_schedule_single_event( time() + 120, 'scj_publish_now' );
 		}
@@ -95,14 +99,14 @@ class SCJ_Scheduler {
 	}
 
 	/**
-	 * Je li današnja objava bila prije roka (8:00)?
+	 * Je li današnja objava bila prije roka (11:00, čl. 3. st. 5. Pravilnika o načinu objave cjenika)?
 	 */
 	public static function published_today_on_time() {
 		$first = get_option( 'scj_first_success_today' );
 		if ( ! is_array( $first ) || empty( $first['date'] ) || self::now()->format( 'Y-m-d' ) !== $first['date'] ) {
 			return false;
 		}
-		return $first['time'] <= '08:00';
+		return $first['time'] <= '11:00';
 	}
 
 	/**
@@ -126,7 +130,7 @@ class SCJ_Scheduler {
 		}
 
 		if ( $now->format( 'H:i' ) >= '07:45' && ! self::published_today() ) {
-			self::maybe_alert( 'Današnji cjenik još nije objavljen (kontrola u 7:45).' );
+			self::maybe_alert( 'Današnji cjenik još nije objavljen, a rok je 11:00.' );
 		}
 
 		if ( ! wp_next_scheduled( 'scj_daily' ) ) {

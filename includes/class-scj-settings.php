@@ -16,6 +16,8 @@ class SCJ_Settings {
 			// Podaci o prodajnom objektu (ulaze u naziv datoteke).
 			'naziv_trgovca'        => get_bloginfo( 'name' ),
 			'oib'                  => '',
+			'maticni_broj'         => '',
+			'sva_mjesta'           => 0,
 			'oblik_objekta'        => ( class_exists( 'WooCommerce' ) ? 'webshop' : '' ), // Ministarstvo: za web trgovinu npr. "webshop".
 			'adresa'               => '',
 			'oznaka'               => '',
@@ -101,7 +103,7 @@ class SCJ_Settings {
 			return $out;
 		}
 
-		foreach ( array( 'naziv_trgovca', 'oib', 'oblik_objekta', 'adresa', 'oznaka', 'oznaka_sidrene', 'oznaka_najnize', 'naziv_akcije', 'marka_izvor', 'marka_zadana', 'barkod_meta', 'jedinica_zadana', 'cron_kljuc' ) as $k ) {
+		foreach ( array( 'naziv_trgovca', 'oib', 'maticni_broj', 'oblik_objekta', 'adresa', 'oznaka', 'oznaka_sidrene', 'oznaka_najnize', 'naziv_akcije', 'marka_izvor', 'marka_zadana', 'barkod_meta', 'jedinica_zadana', 'cron_kljuc' ) as $k ) {
 			if ( isset( $input[ $k ] ) ) {
 				$out[ $k ] = sanitize_text_field( wp_unslash( $input[ $k ] ) );
 			}
@@ -118,10 +120,10 @@ class SCJ_Settings {
 		}
 
 		$out['decimalni_separator'] = ( isset( $input['decimalni_separator'] ) && '.' === $input['decimalni_separator'] ) ? '.' : ',';
-		$out['zadrzi_dana']         = isset( $input['zadrzi_dana'] ) ? max( 31, min( 400, absint( $input['zadrzi_dana'] ) ) ) : $d['zadrzi_dana'];
+		$out['zadrzi_dana']         = isset( $input['zadrzi_dana'] ) ? max( 16, min( 400, absint( $input['zadrzi_dana'] ) ) ) : $d['zadrzi_dana'];
 		$out['email_upozorenja']    = isset( $input['email_upozorenja'] ) ? sanitize_email( $input['email_upozorenja'] ) : $d['email_upozorenja'];
 
-		foreach ( array( 'auto_nova_sidrena', 'prikazi_sidrenu', 'prikazi_najnizu', 'csv_bom', 'virtualni_kao_usluge', 'obrisi_pri_deinstalaciji' ) as $k ) {
+		foreach ( array( 'sva_mjesta', 'auto_nova_sidrena', 'prikazi_sidrenu', 'prikazi_najnizu', 'csv_bom', 'virtualni_kao_usluge', 'obrisi_pri_deinstalaciji' ) as $k ) {
 			$out[ $k ] = empty( $input[ $k ] ) ? 0 : 1;
 		}
 
@@ -143,6 +145,12 @@ class SCJ_Settings {
 	 */
 	public static function missing() {
 		$missing = array();
+		if ( '' === trim( (string) self::get( 'oib' ) ) && '' === trim( (string) self::get( 'maticni_broj' ) ) ) {
+			$missing[] = 'OIB ili matični broj';
+		}
+		if ( self::get( 'sva_mjesta' ) ) {
+			return $missing;
+		}
 		if ( '' === trim( (string) self::get( 'oblik_objekta' ) ) ) {
 			$missing[] = 'oblik prodajnog objekta';
 		}

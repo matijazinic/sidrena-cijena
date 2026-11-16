@@ -20,11 +20,11 @@ ok( '1 stavka,2 stavke,5 stavki,11 stavki,12 stavki,14 stavki,21 stavka,22 stavk
 
 echo "== Postavke\n";
 SCJ_Settings::ensure_defaults();
-ok( count( SCJ_Settings::missing() ) === 3, 'bez WooCommercea nedostaju oblik, adresa i oznaka (oblik se mora upisati)' );
+ok( count( SCJ_Settings::missing() ) === 4, 'bez WooCommercea nedostaju OIB ili matični broj, oblik, adresa i oznaka' );
 SCJ_Settings::update( array( 'oblik_objekta' => 'Internet trgovina', 'adresa' => 'Ilica 1, Zagreb', 'oznaka' => 'WEB1', 'oib' => '12345678901' ) );
 ok( ! SCJ_Settings::missing(), 'postavke potpune' );
 $san = SCJ_Settings::sanitize( array( 'zadrzi_dana' => '5', 'formati' => array( 'pdf' ), 'vrijeme_objave' => '25:00', 'decimalni_separator' => ';' ) );
-ok( 31 === $san['zadrzi_dana'] && array( 'csv' ) === $san['formati'] && '01:00' === $san['vrijeme_objave'] && ',' === $san['decimalni_separator'], 'sanitize: min 31 dan, neispravni format/vrijeme odbijeni' );
+ok( 16 === $san['zadrzi_dana'] && array( 'csv' ) === $san['formati'] && '01:00' === $san['vrijeme_objave'] && ',' === $san['decimalni_separator'], 'sanitize: min 16 dana, neispravni format/vrijeme odbijeni' );
 
 echo "== Stavke\n";
 $u1 = t_add_post( 'Šišanje, muško', array( 'tip' => 'usluga', 'cijena' => '15', 'sidrena' => '14' ), 'publish', 1 );
@@ -68,22 +68,27 @@ $files = SCJ_Exporter::files();
 $names = array_column( $files, 'name' );
 print_r( $names );
 ok( count( $files ) === 4, '4 datoteke (proizvodi/usluge × csv/xml)' );
-$re = '/^Internet trgovina_Ilica 1 Zagreb_WEB1_(\d+)_\d{2}\.\d{2}\.\d{4}_\d{2}:\d{2}\.csv$/';
+$re = '/^12345678901_Internet trgovina_Ilica 1 Zagreb_WEB1_(?:roba|usluge)_(\d+)_\d{8}_\d{4}\.csv$/';
 $np = preg_match( $re, SCJ_Exporter::latest( 'proizvodi', 'csv' )['name'], $mp );
 $nu = preg_match( $re, SCJ_Exporter::latest( 'usluge', 'csv' )['name'], $mu );
-ok( $np && $nu, 'nazivi kao primjer Ministarstva: oblik_adresa_oznaka_broj_DD.MM.GGGG_HH:MM, bez nastavka' );
+ok( $np && $nu, 'nazivi prema pravilniku: OIB_oblik_adresa_oznaka_vrsta_broj_GGGGMMDD_SSMM' );
 ok( $np && $nu && array( 1, 2 ) === array( min( (int) $mp[1], (int) $mu[1] ), max( (int) $mp[1], (int) $mu[1] ) ) && 2 === (int) get_option( 'scj_counter' ), 'proizvodi i usluge: zasebni brojevi pohrane (1 i 2), brojač na 2' );
 $csv = file_get_contents( $GLOBALS['T_UP'] . '/cjenici/' . SCJ_Exporter::latest( 'usluge', 'csv' )['name'] );
 echo $csv;
 $lines = array_map( function ( $l ) { return str_getcsv( $l, ';', '"', '' ); }, array_filter( explode( "\n", $csv ) ) );
-ok( $lines[0] === array( 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'bazna_cijena' ), 'zaglavlje usluga' );
+ok( $lines[0] === array( 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'bazna_cijena' ), 'zaglavlje usluga' );
 ok( count( $lines ) === 4, '3 usluge (isključena i skica nisu u cjeniku)' );
-ok( $lines[2] === array( 'Bojanje "kratka kosa"; s pranjem', '32,00', 'da', 'Jesenska akcija', '40,00' ), 'akcija, navodnici i ; ispravno' );
-ok( $lines[3][4] === '', 'nedostajuća sidrena ostaje prazna' );
+ok( $lines[2] === array( 'Bojanje "kratka kosa"; s pranjem', '32,00', 'da', '40,00' ), 'akcija, navodnici i ; ispravno' );
+ok( $lines[3][3] === '', 'nedostajuća sidrena ostaje prazna' );
+$t0 = new DateTimeImmutable( '2026-11-17 07:45:00', wp_timezone() );
+ok( '12345678901_Internet trgovina_Ilica 1 Zagreb_WEB1_roba_104_20261117_0745.csv' === SCJ_Exporter::file_name( 'proizvodi', 104, $t0, 'csv' ), 'naziv datoteke: primjer s fiksnim vremenom' );
+SCJ_Settings::update( array( 'sva_mjesta' => 1, 'maticni_broj' => '98765432' ) );
+ok( '98765432_ZA_SVA_PRODAJNA_MJESTA_usluge_7_20261117_0745.xml' === SCJ_Exporter::file_name( 'usluge', 7, $t0, 'xml' ) && array() === SCJ_Settings::missing(), 'isti cjenik za sva mjesta + matični broj umjesto OIB-a' );
+SCJ_Settings::update( array( 'sva_mjesta' => 0, 'maticni_broj' => '' ) );
 $pcsv = file_get_contents( $GLOBALS['T_UP'] . '/cjenici/' . SCJ_Exporter::latest( 'proizvodi', 'csv' )['name'] );
 echo $pcsv;
 $pl = str_getcsv( explode( "\n", $pcsv )[1], ';', '"', '' );
-ok( $pl === array( 'Šampon 500 ml', 'SAM-500', 'Kozmo', '0,50', 'l', '16,00', '8,00', 'ne', '', '7,50', '3850000000001' ), 'redak proizvoda: neto 0,50 l, cijena/l = 16,00, bez dostupnosti' );
+ok( $pl === array( 'Šampon 500 ml', 'SAM-500', 'Kozmo', '0,50', 'l', '8,00', 'ne', '16,00', '', '3850000000001', '7,50' ), 'redak proizvoda: propisani redoslijed, EAN u svom stupcu' );
 
 $xmlf = $GLOBALS['T_UP'] . '/cjenici/' . SCJ_Exporter::latest( 'usluge', 'xml' )['name'];
 libxml_use_internal_errors( true );

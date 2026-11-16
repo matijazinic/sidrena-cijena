@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name:       Sidrena cijena i cjenik
- * Description:       Isticanje bazne (sidrene) cijene, najniže cijene u zadnjih 30 dana i automatska dnevna objava cjenika u CSV/XML formatu prema pravilnicima koji vrijede od 17. 11. 2026. Radi s WooCommerceom i bez njega (usluge i proizvodi kao stavke cjenika).
- * Version:           1.1.1
+ * Description:       Isticanje bazne (sidrene) cijene, najniže cijene u zadnjih 30 dana i automatska dnevna objava cjenika u CSV/XML formatu prema pravilnicima iz NN 132/2026. Radi s WooCommerceom i bez njega (usluge i proizvodi kao stavke cjenika).
+ * Version:           1.2.0
  * Author:            Matija Žinić
  * Author URI:        https://zin-digital.com/
  * Plugin URI:        https://github.com/matijazinic/sidrena-cijena
@@ -21,7 +21,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SCJ_VERSION', '1.1.1' );
+define( 'SCJ_VERSION', '1.2.0' );
 define( 'SCJ_FILE', __FILE__ );
 define( 'SCJ_DIR', plugin_dir_path( __FILE__ ) );
 define( 'SCJ_URL', plugin_dir_url( __FILE__ ) );

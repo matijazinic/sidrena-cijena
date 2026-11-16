@@ -129,9 +129,9 @@ class SCJ_Admin {
 		$first = get_option( 'scj_first_success_today' );
 		$next  = wp_next_scheduled( 'scj_daily' );
 		$c[]   = array(
-			$today ? ( SCJ_Scheduler::published_today_on_time() ? 'ok' : 'warn' ) : ( SCJ_Scheduler::now()->format( 'H:i' ) >= '08:00' ? 'err' : 'warn' ),
+			$today ? ( SCJ_Scheduler::published_today_on_time() ? 'ok' : 'warn' ) : ( SCJ_Scheduler::now()->format( 'H:i' ) >= '11:00' ? 'err' : 'warn' ),
 			'Današnja objava',
-			$today ? 'Objavljeno danas u ' . esc_html( is_array( $first ) ? $first['time'] : '' ) . ( SCJ_Scheduler::published_today_on_time() ? ' (prije 8:00).' : ' (nakon 8:00).' ) : 'Još nije objavljeno.' . ( $next ? ' Zakazano: ' . esc_html( wp_date( 'j. n. Y. H:i', (int) $next ) ) : '' ),
+			$today ? 'Objavljeno danas u ' . esc_html( is_array( $first ) ? $first['time'] : '' ) . ( SCJ_Scheduler::published_today_on_time() ? ' (prije 11:00).' : ' (nakon 11:00).' ) : 'Još nije objavljeno.' . ( $next ? ' Zakazano: ' . esc_html( wp_date( 'j. n. Y. H:i', (int) $next ) ) : '' ),
 		);
 		$last = self::last_log();
 		if ( $last ) {
@@ -270,7 +270,7 @@ class SCJ_Admin {
 		}
 		$last = get_option( 'scj_last_success' );
 		if ( ! $ours && ( $last || SCJ_Scheduler::now()->format( 'Y-m-d' ) >= '2026-11-17' ) && ! SCJ_Scheduler::published_today() && SCJ_Scheduler::now()->format( 'H:i' ) >= '08:00' ) {
-			echo '<div class="notice notice-error"><p><strong>Sidrena cijena:</strong> današnji cjenik do 8:00 nije objavljen. <a href="' . esc_url( admin_url( 'admin.php?page=scj-status' ) ) . '">Status i objava</a></p></div>';
+			echo '<div class="notice notice-error"><p><strong>Sidrena cijena:</strong> današnji cjenik još nije objavljen, a rok je 11:00. <a href="' . esc_url( admin_url( 'admin.php?page=scj-status' ) ) . '">Status i objava</a></p></div>';
 		}
 	}
 
@@ -390,7 +390,7 @@ class SCJ_Admin {
 	 * Kratko odricanje od odgovornosti na dnu stranica plugina.
 	 */
 	private static function disclaimer() {
-		echo '<p class="description" style="max-width:1000px;margin-top:24px;border-top:1px solid #dcdcde;padding-top:12px">Dodatak je izrađen prema pravilnicima o isticanju bazne cijene i o načinu objave cjenika (na snazi od 17. 11. 2026.) i dostupnim pojašnjenjima Ministarstva gospodarstva, ali nije pravni savjet i ne jamči usklađenost s propisima. Propisi i njihova tumačenja se mijenjaju, a moguće su i greške u dodatku. Koristite ga na vlastitu odgovornost i redovito provjeravajte prikazane i objavljene cijene. Za točnost cijena i usklađenost poslovanja odgovara trgovac, odnosno pružatelj usluge.</p>';
+		echo '<p class="description" style="max-width:1000px;margin-top:24px;border-top:1px solid #dcdcde;padding-top:12px">Dodatak je izrađen prema pravilnicima o isticanju bazne cijene i o načinu objave cjenika (NN 132/2026) i dostupnim pojašnjenjima Ministarstva gospodarstva, ali nije pravni savjet i ne jamči usklađenost s propisima. Propisi i njihova tumačenja se mijenjaju, a moguće su i greške u dodatku. Koristite ga na vlastitu odgovornost i redovito provjeravajte prikazane i objavljene cijene. Za točnost cijena i usklađenost poslovanja odgovara trgovac, odnosno pružatelj usluge.</p>';
 		echo '<p class="description" style="max-width:1000px">Trebate pomoć s postavljanjem ili održavanjem? <a href="https://zin-digital.com/" target="_blank" rel="noopener">Matija Žinić, zin-digital.com</a></p>';
 	}
 
@@ -417,10 +417,12 @@ class SCJ_Admin {
 		echo '<form method="post" action="options.php">';
 		settings_fields( 'scj_settings_group' );
 
-		echo '<h2>Prodajni objekt</h2><p>Ovi podaci ulaze u naziv datoteke cjenika kako su upisani, prema primjeru Ministarstva: <code>prodavaonica_Ilica 150 Zagreb_P-01_104_01.10.2026_07:45.csv</code>. Oznaka je ista kao na računima (oznaka poslovnog prostora).</p><table class="form-table">';
+		echo '<h2>Prodajni objekt</h2><p>Ovi podaci ulaze u naziv datoteke cjenika kako su upisani (Pravilnik o načinu objave cjenika proizvoda, NN 132/2026, čl. 6.), npr. <code>12345678903_prodavaonica_Ilica 150 Zagreb_P-01_roba_104_20261117_0745.csv</code>. Oznaka je ista kao na računima (oznaka poslovnog prostora).</p><table class="form-table">';
 		self::field( 'naziv_trgovca', 'Naziv trgovca' );
-		self::field( 'oib', 'OIB', 'text', 'Neobavezno. Upisuje se u zaglavlje XML-a.' );
-		self::field( 'oblik_objekta', 'Oblik prodajnog objekta', 'text', 'Za web trgovinu Ministarstvo navodi "webshop". Za ostalo npr. prodavaonica, servis, salon, frizerski salon.' );
+		self::field( 'oib', 'OIB', 'text', 'Obavezno za pravne osobe (d.o.o., j.d.o.o. i sl.). Ulazi u naziv datoteke i u zaglavlje XML-a.' );
+		self::field( 'maticni_broj', 'Matični broj', 'text', 'Samo za fizičke osobe (obrt, OPG, samostalna djelatnost), npr. matični broj obrta. Ako je upisan, u naziv datoteke ide on umjesto OIB-a.' );
+		self::field( 'sva_mjesta', 'Više prodajnih mjesta', 'checkbox', 'Isti cjenik vrijedi za sva prodajna mjesta. U nazivu datoteke tada umjesto oblika, adrese i oznake stoji ZA_SVA_PRODAJNA_MJESTA.' );
+		self::field( 'oblik_objekta', 'Oblik prodajnog objekta', 'text', 'Vrsta prodajnog mjesta. Za web trgovinu "webshop", za ostalo npr. prodavaonica, servis, salon, frizerski salon.' );
 		self::field( 'adresa', 'Adresa prodajnog objekta', 'text', 'npr. Ilica 150 Zagreb. Za web trgovinu adresa sjedišta.' );
 		self::field( 'oznaka', 'Oznaka prodajnog objekta', 'text', 'Oznaka poslovnog prostora, npr. P-01. Tko nema internu oznaku, može upisati npr. P-01, NP ili 01. Svaka lokacija (i web trgovina) ima svoju oznaku i svoj cjenik.' );
 		echo '</table>';
@@ -442,7 +444,7 @@ class SCJ_Admin {
 					echo '<label style="display:block"><input type="checkbox" name="' . esc_attr( $o ) . '[stare_kategorije][]" value="' . (int) $cat->term_id . '" ' . checked( in_array( (int) $cat->term_id, $sel, true ), true, false ) . '> ' . esc_html( $cat->name ) . '</label>';
 				}
 			}
-			echo '</div><p class="description">Označite samo ako ste bili obveznik stare odluke (NN 75/2025). Proizvodi u odabranim kategorijama (i podkategorijama) koriste raniji datum, osim ako proizvod ima vlastiti datum. Za te proizvode ne ističe se i datum 10. 9. 2026. Ako je proizvod 2. 5. 2025. bio na akciji, kao sidrenu upišite najnižu cijenu u 30 dana prije početka te akcije.</p></td></tr>';
+			echo '</div><p class="description">Označite kategorije u kojima su hrana, piće, kozmetika, sredstva za čišćenje, toaletne potrepštine i proizvodi za kućanstvo. Za njih je bazna cijena ona na dan 2. 5. 2025., a za proizvode dodane kasnije cijena na dan kad su dodani. Vrijedi i za podkategorije, osim ako proizvod ima vlastiti datum. Za te proizvode ne ističe se i datum 10. 9. 2026. Ako je proizvod 2. 5. 2025. bio na akciji, kao sidrenu upišite najnižu cijenu u 30 dana prije početka te akcije.</p></td></tr>';
 		}
 		self::field( 'auto_nova_sidrena', 'Novi proizvodi', 'checkbox', 'Proizvodima i uslugama objavljenima nakon referentnog datuma automatski upiši sidrenu cijenu = cijena prvog dana ponude, s tim datumom. Isti proizvod s novom šifrom ili nazivom nije novi proizvod: ako ga unesete ponovo, upišite mu staru sidrenu cijenu i datum.' );
 		echo '</table>';
@@ -481,10 +483,10 @@ class SCJ_Admin {
 		echo '<h2>Objava cjenika</h2><table class="form-table">';
 		$f = (array) SCJ_Settings::get( 'formati' );
 		echo '<tr><th scope="row">Formati</th><td><label><input type="checkbox" name="' . esc_attr( $o ) . '[formati][]" value="csv" ' . checked( in_array( 'csv', $f, true ), true, false ) . '> CSV</label> &nbsp; <label><input type="checkbox" name="' . esc_attr( $o ) . '[formati][]" value="xml" ' . checked( in_array( 'xml', $f, true ), true, false ) . '> XML</label><p class="description">Odluka traži jedan od dva formata.</p></td></tr>';
-		self::field( 'vrijeme_objave', 'Vrijeme dnevne objave', 'time', 'Promjena cijene mora biti u cjeniku najkasnije idući radni dan do 11:00. Preporuka je 01:00: WordPress zadatke pokreće tek kad netko posjeti stranicu, pa ranije vrijeme daje više prilika da se cjenik objavi na vrijeme (ako objava ne uspije, pokušava se svaki sat). Dodatak cjenik objavljuje svaki dan, i kad promjene nije bilo.' );
+		self::field( 'vrijeme_objave', 'Vrijeme dnevne objave', 'time', 'Izmijenjeni cjenik mora biti objavljen do 11:00 na dan izmjene. Preporuka je 01:00: WordPress zadatke pokreće tek kad netko posjeti stranicu, pa ranije vrijeme daje više prilika da se cjenik objavi na vrijeme (ako objava ne uspije, pokušava se svaki sat). Dodatak cjenik objavljuje svaki dan, a nakon promjene cijene proizvoda ili usluge i odmah.' );
 		echo '<tr><th scope="row">Decimalni separator (CSV)</th><td><select name="' . esc_attr( $o ) . '[decimalni_separator]"><option value="," ' . selected( SCJ_Settings::get( 'decimalni_separator' ), ',', false ) . '>zarez (12,50)</option><option value="." ' . selected( SCJ_Settings::get( 'decimalni_separator' ), '.', false ) . '>točka (12.50)</option></select><p class="description">Razdjelnik stupaca je točka-zarez. XML uvijek koristi točku.</p></td></tr>';
 		self::field( 'csv_bom', 'UTF-8 BOM', 'checkbox', 'Dodaj BOM (Excel tada ispravno prikazuje hrvatska slova, ali neki programi ga ne vole).' );
-		self::field( 'zadrzi_dana', 'Čuvaj datoteke (dana)', 'number', 'Najmanje 31. Prethodni cjenici moraju biti javno dostupni najmanje 30 dana od objave.', 'min="31" max="400"' );
+		self::field( 'zadrzi_dana', 'Čuvaj datoteke (dana)', 'number', 'Najmanje 16. Prethodni cjenik mora ostati javno dostupan 15 dana nakon što ga zamijeni novi.', 'min="16" max="400"' );
 		self::field( 'email_upozorenja', 'E-mail za upozorenja', 'email', 'Šalje se kad objava ne uspije ili cjenik nije objavljen do 7:45.' );
 		self::field( 'cron_kljuc', 'Ključ vanjskog okidača', 'text', 'Promijenite ako je adresa okidača procurila.' );
 		self::field( 'obrisi_pri_deinstalaciji', 'Deinstalacija', 'checkbox', 'Pri brisanju dodatka obriši i sve podatke (sidrene cijene, povijest, stavke). Objavljene datoteke ostaju.' );

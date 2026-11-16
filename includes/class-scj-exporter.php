@@ -18,10 +18,11 @@ class SCJ_Writer {
 
 	public static function columns( $tip ) {
 		$cols = 'usluge' === $tip
-			? array( 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'bazna_cijena' )
-			: array( 'naziv', 'sifra', 'marka', 'neto_kolicina', 'jedinica_mjere', 'cijena_za_jedinicu_mjere', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'naziv_posebnog_oblika_prodaje', 'bazna_cijena', 'barkod' );
-		// Pravilnik o načinu objave cjenika (od 17. 11. 2026.): neto količina umjesto dostupnosti, "bazna cijena".
-		// Stari stupci 'sidrena_cijena', 'dostupnost' i 'datum_sidrene_cijene' i dalje se mogu vratiti ovim filterom.
+			? array( 'naziv', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'bazna_cijena' )
+			: array( 'naziv', 'sifra', 'marka', 'neto_kolicina', 'jedinica_mjere', 'maloprodajna_cijena', 'posebni_oblik_prodaje', 'cijena_za_jedinicu_mjere', 'barkod', 'ean_barkod', 'bazna_cijena' );
+		// Pravilnik o načinu objave cjenika proizvoda (NN 132/2026), čl. 3. st. 2.-4.: redoslijed stupaca je propisan.
+		// Dodatne vrijednosti ('naziv_posebnog_oblika_prodaje', 'datum_sidrene_cijene', 'dostupnost', 'sidrena_cijena')
+		// i dalje postoje u retku i mogu se dodati ovim filterom.
 		return apply_filters( 'scj_columns', $cols, $tip );
 	}
 
@@ -56,7 +57,9 @@ class SCJ_Writer {
 
 	public function values( array $r ) {
 		$sep = 'xml' === $this->format ? '.' : $this->sep;
-		$all = array(
+		$barkod = isset( $r['barkod'] ) ? trim( (string) $r['barkod'] ) : '';
+		$ean    = (bool) preg_match( '/^(\d{8}|\d{12,14})$/', $barkod );
+		$all    = array(
 			'naziv'                         => $r['naziv'],
 			'sifra'                         => isset( $r['sifra'] ) ? $r['sifra'] : '',
 			'marka'                         => isset( $r['marka'] ) ? $r['marka'] : '',
@@ -69,7 +72,9 @@ class SCJ_Writer {
 			'bazna_cijena'                  => SCJ_Format::number( $r['sidrena'], $sep ),
 			'sidrena_cijena'                => SCJ_Format::number( $r['sidrena'], $sep ),
 			'datum_sidrene_cijene'          => isset( $r['datum'] ) ? $r['datum'] : '',
-			'barkod'                        => isset( $r['barkod'] ) ? $r['barkod'] : '',
+			// Pravilnik razlikuje "barkod" i "EAN barkod": kod od 8, 12, 13 ili 14 znamenki ide u EAN stupac, ostalo u barkod.
+			'barkod'                        => $ean ? '' : $barkod,
+			'ean_barkod'                    => $ean ? $barkod : '',
 			'dostupnost'                    => ! isset( $r['dostupno'] ) || $r['dostupno'] ? 'dostupno' : 'nedostupno',
 		);
 		$all = apply_filters( 'scj_row_values', $all, $r, $this->tip );
@@ -153,22 +158,27 @@ class SCJ_Exporter {
 	}
 
 	/**
-	 * Naziv prema primjeru Ministarstva: oblik_adresa_oznaka_broj pohrane_datum_vrijeme,
-	 * npr. "prodavaonica_Ilica 150 Zagreb_P-01_104_01.10.2026_07:45.csv".
-	 * Objekt s proizvodima i uslugama objavljuje dvije datoteke s istom oznakom, a svaka ima svoj broj pohrane
-	 * (redni broj generirane datoteke), pa se nazivi razlikuju bez dodataka koje primjer nema.
-	 * Na Windows serveru dvotočka nije dopuštena u nazivu, pa je vrijeme 07-45.
+	 * Naziv prema Pravilniku o načinu objave cjenika proizvoda (NN 132/2026), čl. 6. st. 3. i 4.:
+	 * OIB (pravna osoba) ili matični broj (fizička osoba), prodajno mjesto, adresa, oznaka, roba ili usluge,
+	 * broj pohrane, vremenska oznaka GGGGMMDD_SSMM, npr.
+	 * "12345678903_prodavaonica_Ilica 150 Zagreb_P-01_roba_104_20261117_0745.csv".
+	 * Isti cjenik za sva prodajna mjesta: "12345678903_ZA_SVA_PRODAJNA_MJESTA_roba_104_20261117_0745.csv".
 	 */
 	public static function file_name( $tip, $broj, DateTimeImmutable $time, $ext ) {
-		$sep   = ( defined( 'PHP_OS_FAMILY' ) && 'Windows' === PHP_OS_FAMILY ) ? '-' : ':';
-		$parts = array(
-			SCJ_Format::name_part( SCJ_Settings::get( 'oblik_objekta' ) ),
-			SCJ_Format::name_part( SCJ_Settings::get( 'adresa' ) ),
-			SCJ_Format::name_part( SCJ_Settings::get( 'oznaka' ) ),
-			(string) (int) $broj,
-			$time->format( 'd.m.Y' ),
-			$time->format( 'H' ) . $sep . $time->format( 'i' ),
-		);
+		$id    = trim( (string) SCJ_Settings::get( 'maticni_broj' ) );
+		$id    = '' !== $id ? $id : trim( (string) SCJ_Settings::get( 'oib' ) );
+		$parts = '' !== $id ? array( SCJ_Format::name_part( $id ) ) : array();
+		if ( SCJ_Settings::get( 'sva_mjesta' ) ) {
+			$parts[] = 'ZA_SVA_PRODAJNA_MJESTA';
+		} else {
+			$parts[] = SCJ_Format::name_part( SCJ_Settings::get( 'oblik_objekta' ) );
+			$parts[] = SCJ_Format::name_part( SCJ_Settings::get( 'adresa' ) );
+			$parts[] = SCJ_Format::name_part( SCJ_Settings::get( 'oznaka' ) );
+		}
+		$parts[] = 'usluge' === $tip ? 'usluge' : 'roba';
+		$parts[] = (string) (int) $broj;
+		$parts[] = $time->format( 'Ymd' );
+		$parts[] = $time->format( 'Hi' );
 		return apply_filters( 'scj_file_name', implode( '_', $parts ) . '.' . $ext, $tip, $broj, $time, $ext );
 	}
 
@@ -385,7 +395,7 @@ class SCJ_Exporter {
 		if ( false !== strpos( $name, '_usluge' ) ) {
 			return 'usluge';
 		}
-		if ( false !== strpos( $name, '_proizvodi' ) ) {
+		if ( false !== strpos( $name, '_proizvodi' ) || false !== strpos( $name, '_roba_' ) ) {
 			return 'proizvodi';
 		}
 		$key = $name . filemtime( $path );
@@ -395,9 +405,9 @@ class SCJ_Exporter {
 				$cache[ $key ] = false !== strpos( $head, 'vrsta="usluge"' ) ? 'usluge' : 'proizvodi';
 			} else {
 				$line          = trim( strtok( preg_replace( '/^\xEF\xBB\xBF/', '', $head ), "\n" ) );
-				// Datoteke objavljene do 1.0.x imaju stupac "sidrena_cijena"; u arhivi ostaju još 30-ak dana.
-				$now           = implode( ';', SCJ_Writer::columns( 'usluge' ) );
-				$cache[ $key ] = in_array( $line, array( $now, str_replace( 'bazna_cijena', 'sidrena_cijena', $now ) ), true ) ? 'usluge' : 'proizvodi';
+				// Starije datoteke (do 1.1.x) nemaju vrstu u nazivu: cjenik usluga nema stupac šifre ni jedinice mjere.
+				$cols          = explode( ';', $line );
+				$cache[ $key ] = ( in_array( 'sifra', $cols, true ) || in_array( 'jedinica_mjere', $cols, true ) ) ? 'proizvodi' : 'usluge';
 			}
 		}
 		return $cache[ $key ];
@@ -484,7 +494,7 @@ class SCJ_Exporter {
 		$html .= '<title>Cjenici – ' . esc_html( SCJ_Settings::get( 'naziv_trgovca' ) ) . '</title>';
 		$html .= '<style>body{font-family:system-ui,sans-serif;max-width:860px;margin:2rem auto;padding:0 1rem;color:#1d2327}table{border-collapse:collapse;width:100%}td,th{text-align:left;padding:.4rem .6rem;border-bottom:1px solid #ddd;font-size:.95rem}</style></head><body>';
 		$html .= '<h1>Cjenici</h1><p>' . esc_html( SCJ_Settings::get( 'naziv_trgovca' ) ) . ' · ' . esc_html( SCJ_Settings::get( 'oblik_objekta' ) ) . ', ' . esc_html( SCJ_Settings::get( 'adresa' ) ) . '</p>';
-		$html .= '<p>Objava cjenika prema Pravilniku o načinu objave cjenika (na snazi od 17. 11. 2026.). Strojno čitljiv popis: <a href="index.json">index.json</a></p>';
+		$html .= '<p>Objava cjenika prema Pravilniku o načinu objave cjenika proizvoda (NN 132/2026). Strojno čitljiv popis: <a href="index.json">index.json</a></p>';
 		$html .= '<table><thead><tr><th>Datoteka</th><th>Vrsta</th><th>Objavljeno</th></tr></thead><tbody>';
 		foreach ( $files as $f ) {
 			$html .= '<tr><td><a href="' . esc_attr( rawurlencode( $f['name'] ) ) . '">' . esc_html( $f['name'] ) . '</a></td><td>' . esc_html( $f['tip'] ) . '</td><td>' . esc_html( wp_date( 'j. n. Y. H:i', $f['mtime'] ) ) . '</td></tr>';
