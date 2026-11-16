@@ -115,6 +115,15 @@ touch( $recent, time() - 25 * 86400 );
 SCJ_Exporter::cleanup();
 ok( ! file_exists( $old ) && file_exists( $recent ), 'briše >35 dana, čuva <30 dana' );
 
+echo "== Važeći cjenik = zadnja objava\n";
+ok( SCJ_Exporter::current( 'usluge', 'csv' )['name'] === SCJ_Exporter::latest( 'usluge', 'csv' )['name'], 'current = latest dok se vrsta objavljuje' );
+update_post_meta( $p1, '_scj_iskljuci', '1' ); // Jedini proizvod izvan cjenika: objavljuju se samo usluge.
+sleep( 1 );
+SCJ_Exporter::publish( 'test 3' );
+ok( null === SCJ_Exporter::current( 'proizvodi', 'csv' ) && null !== SCJ_Exporter::latest( 'proizvodi', 'csv' ), 'vrsta koja se više ne objavljuje: samo u arhivi, nije važeća' );
+ok( false === strpos( SCJ_Frontend::sc_arhiva(), 'Proizvodi' ) && false !== strpos( SCJ_Frontend::sc_arhiva(), 'Usluge – CSV' ), '[sidrena_arhiva] navodi samo važeće datoteke' );
+update_post_meta( $p1, '_scj_iskljuci', '' );
+
 echo "== Uživo (REST)\n";
 $live = SCJ_Exporter::build_live( 'usluge', 'csv' );
 ok( 4 === count( array_filter( explode( "\n", $live ) ) ), 'build_live usluge csv' );

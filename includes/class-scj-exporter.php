@@ -301,6 +301,8 @@ class SCJ_Exporter {
 		if ( $ok ) {
 			$now = SCJ_Scheduler::now();
 			update_option( 'scj_last_success', time(), false );
+			// Važeći cjenik = datoteke zadnje objave. Vrsta koja se više ne objavljuje ostaje samo u arhivi.
+			update_option( 'scj_current_files', array_values( $files ), false );
 			$first = get_option( 'scj_first_success_today' );
 			if ( ! is_array( $first ) || ( isset( $first['date'] ) && $first['date'] !== $now->format( 'Y-m-d' ) ) ) {
 				update_option(
@@ -407,6 +409,24 @@ class SCJ_Exporter {
 	public static function latest( $tip, $format ) {
 		foreach ( self::files() as $f ) {
 			if ( $f['tip'] === $tip && $f['format'] === $format ) {
+				return $f;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Važeća datoteka po vrsti i formatu: iz zadnje uspješne objave. Ako vrsta u zadnjoj objavi nije bila
+	 * (npr. trgovac više nema usluga ili su virtualni proizvodi prebačeni u usluge), vraća null.
+	 * Instalacije bez zapisa zadnje objave (prije 1.1.1) vraćaju najnoviju datoteku.
+	 */
+	public static function current( $tip, $format ) {
+		$names = get_option( 'scj_current_files', null );
+		if ( ! is_array( $names ) || ! $names ) {
+			return self::latest( $tip, $format );
+		}
+		foreach ( self::files() as $f ) {
+			if ( $f['tip'] === $tip && $f['format'] === $format && in_array( $f['name'], $names, true ) ) {
 				return $f;
 			}
 		}

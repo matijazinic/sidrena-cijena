@@ -228,7 +228,7 @@ class SCJ_Frontend {
 		$seen = 0;
 		foreach ( array( 'proizvodi', 'usluge' ) as $tip ) {
 			foreach ( (array) SCJ_Settings::get( 'formati' ) as $fmt ) {
-				$f = SCJ_Exporter::latest( $tip, $fmt );
+				$f = SCJ_Exporter::current( $tip, $fmt );
 				if ( $f ) {
 					$out .= '<li><a href="' . esc_url( $f['url'] ) . '">' . esc_html( ucfirst( $tip ) . ' – ' . strtoupper( $fmt ) ) . '</a> <small>(' . esc_html( wp_date( 'j. n. Y. H:i', $f['mtime'] ) ) . ')</small></li>';
 					$seen++;
