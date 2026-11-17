@@ -63,7 +63,11 @@ class SCJ_Scheduler {
 	}
 
 	public static function run_daily() {
-		SCJ_Exporter::publish( 'dnevna objava' );
+		// Kad noću nema posjeta, WP-Cron prvim posjetom pokrene zaostale scj_tick i scj_daily u istom zahtjevu.
+		// Ako je kontrolna objava već objavila cjenik nakon današnjeg vremena objave, druga bi bila duplikat.
+		if ( ! self::published_since_target() ) {
+			SCJ_Exporter::publish( 'dnevna objava' );
+		}
 		SCJ_History::purge();
 		wp_clear_scheduled_hook( 'scj_daily' );
 		wp_schedule_single_event( self::next_publish_ts(), 'scj_daily' );
@@ -96,6 +100,14 @@ class SCJ_Scheduler {
 		}
 		$today = self::now()->format( 'Y-m-d' );
 		return wp_date( 'Y-m-d', (int) $last ) === $today;
+	}
+
+	/**
+	 * Je li cjenik uspješno objavljen nakon današnjeg vremena objave (npr. kontrolnom objavom)?
+	 */
+	public static function published_since_target() {
+		$last = (int) get_option( 'scj_last_success', 0 );
+		return $last > 0 && $last >= self::today_target()->getTimestamp();
 	}
 
 	/**

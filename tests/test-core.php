@@ -138,6 +138,18 @@ SCJ_Settings::update( array( 'vrijeme_objave' => '06:00' ) );
 $ts = SCJ_Scheduler::next_publish_ts();
 ok( '06:00' === wp_date( 'H:i', $ts ) && $ts > time() && $ts - time() <= 86400, 'sljedeća objava u 06:00 po zagrebačkom vremenu' );
 
+echo "== Bez dvostruke dnevne objave\n";
+SCJ_Settings::update( array( 'vrijeme_objave' => '00:00' ) );
+delete_transient( 'scj_lock' );
+update_option( 'scj_last_success', time() ); // Kontrolna objava (scj_tick) upravo je objavila.
+$n_before = count( SCJ_Exporter::files() );
+SCJ_Scheduler::run_daily();
+ok( count( SCJ_Exporter::files() ) === $n_before && wp_next_scheduled( 'scj_daily' ) > time(), 'dnevna objava preskočena nakon kontrolne, sljedeća zakazana' );
+update_option( 'scj_last_success', SCJ_Scheduler::today_target()->getTimestamp() - 60 ); // Zadnja objava prije današnjeg vremena objave.
+SCJ_Scheduler::run_daily();
+ok( count( SCJ_Exporter::files() ) > $n_before, 'dnevna objava radi kad nakon vremena objave još nije objavljeno' );
+SCJ_Settings::update( array( 'vrijeme_objave' => '06:00' ) );
+
 echo "== Akcije s datumom (stavke)\n";
 $jucer = wp_date( 'Y-m-d', time() - 86400 );
 $sutra = wp_date( 'Y-m-d', time() + 86400 );

@@ -3,7 +3,7 @@ Tags: sidrena cijena, cjenik, woocommerce, hrvatska
 Requires at least: 6.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.2.1
 License: GPLv2 or later
 
 Bazna (sidrena) cijena, najniža cijena u 30 dana i dnevna objava cjenika u CSV/XML formatu.
@@ -60,6 +60,9 @@ Plugin je izrađen s pažnjom, prema pravilnicima o isticanju bazne cijene i o n
 * Prikazane i objavljene cijene redovito provjeravajte, posebno nakon ažuriranja plugina, WordPressa ili WooCommercea.
 
 == Changelog ==
+
+= 1.2.1 =
+* Ispravak: kad noću nema posjeta, prvi jutarnji posjet više ne objavljuje cjenik dvaput (kontrolna i dnevna objava u istom trenutku). Dnevna objava se preskače ako je cjenik već objavljen nakon zadanog vremena objave.
 
 = 1.2.0 =
 * Usklađeno s konačnim tekstom pravilnika (NN 132/2026).
